@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROK DKP 랭킹 시스템</title>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
+    <style>
+        :root { 
+            --primary-color: #f39c12; 
+            --bg-color: #121212; 
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --border-color: #333;
+        }
+        body { 
+            font-family: 'Apple SD Gothic Neo', sans-serif; 
+            background-color: var(--bg-color); 
+            color: var(--text-color); 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+        h2 { color: var(--primary-color); margin-bottom: 20px; }
+
+        /* 검색창 스타일 */
+        .search-container {
+            width: 100%;
+            max-width: 900px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        #searchInput {
+            flex: 1;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: white;
+            font-size: 16px;
+        }
+        #searchInput:focus { outline: 2px solid var(--primary-color); }
+
+        /* 테이블 스타일 */
+        table { 
+            width: 100%; 
+            max-width: 900px; 
+            border-collapse: collapse; 
+            background: var(--card-bg); 
+            border-radius: 12px; 
+            overflow: hidden; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+        }
+        th { 
+            background-color: #2c2c2c; 
+            color: var(--primary-color); 
+            padding: 18px; 
+            font-size: 14px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+        td { 
+            padding: 15px; 
+            border-bottom: 1px solid var(--border-color); 
+            text-align: center; 
+            font-size: 14px; 
+        }
+        tr:hover { background-color: #2a2a2a; }
+        .rank-gold { color: #ffd700; font-weight: bold; }
+        .dkp-highlight { color: #ff4757; font-weight: bold; }
+        .loading { margin-top: 50px; color: #888; }
+    </style>
+</head>
+<body>
+
+    <h2>🛡️ 연맹 DKP 랭킹 보드</h2>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" onkeyup="filterData()" placeholder="본인의 User ID를 입력하여 검색하세요...">
+    </div>
+    
+    <table id="dkpTable">
+        <thead>
+            <tr>
+                <th>순위</th>
+                <th>유저명</th>
+                <th>ID</th>
+                <th>T4 킬</th>
+                <th>T5 킬</th>
+                <th>데스</th>
+                <th>총 DKP</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+
+    <div id="loader" class="loading">데이터를 로딩 중...</div>
+
+    <script>
+        const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRd8sijeP2d8lwtLT9vbkVZN3ZwZ31saToMee7VGPjnNn5D_hefOr0yEKsNCc5886ntTXrI8-3Jmb6F/pub?gid=0&single=true&output=csv';
+        let allData = [];
+
+        function loadData() {
+            Papa.parse(sheetUrl, {
+                download: true,
+                header: true,
+                complete: function(results) {
+                    // 구글 시트에서 ueser -> user로 수정한 헤더 이름으로 매칭
+                    allData = results.data
+                        .filter(row => row['user name']) 
+                        .sort((a, b) => parseFloat(b['DKP point']) - parseFloat(a['DKP point']));
+
+                    displayData(allData);
+                    document.querySelector('#loader').style.display = 'none';
+                }
+            });
+        }
+
+        function displayData(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            data.forEach((row, index) => {
+                // 전체 데이터(allData)에서의 실제 순위를 계산
+                const actualRank = allData.findIndex(item => item['user ID'] === row['user ID']) + 1;
+                const rankClass = actualRank <= 3 ? 'rank-gold' : '';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="${rankClass}">${actualRank}</td>
+                    <td style="font-weight:bold; color:#f1c40f;">${row['user name']}</td>
+                    <td style="color:#888;">${row['user ID']}</td>
+                    <td>${Number(row['T4 kill'] || 0).toLocaleString()}</td>
+                    <td>${Number(row['T5 kill'] || 0).toLocaleString()}</td>
+                    <td>${Number(row['Death'] || 0).toLocaleString()}</td>
+                    <td class="dkp-highlight">${Number(row['DKP point'] || 0).toLocaleString()}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterData() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allData.filter(row => 
+                row['user ID'].toLowerCase().includes(searchTerm) || 
+                row['user name'].toLowerCase().includes(searchTerm)
+            );
+            displayData(filtered);
+        }
+
+        window.onload = loadData;
+    </script>
+</body>
+</html>
