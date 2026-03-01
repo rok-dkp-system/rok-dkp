@@ -12,6 +12,8 @@
             --card-bg: #1e1e1e;
             --text-color: #e0e0e0;
             --border-color: #333;
+            --progress-bg: #333;
+            --progress-fill: #f39c12;
         }
         body { 
             font-family: 'Apple SD Gothic Neo', sans-serif; 
@@ -24,10 +26,9 @@
         }
         h2 { color: var(--primary-color); margin-bottom: 20px; }
 
-        /* 검색창 스타일 */
         .search-container {
             width: 100%;
-            max-width: 900px;
+            max-width: 1000px;
             margin-bottom: 20px;
             display: flex;
             gap: 10px;
@@ -41,12 +42,10 @@
             color: white;
             font-size: 16px;
         }
-        #searchInput:focus { outline: 2px solid var(--primary-color); }
 
-        /* 테이블 스타일 */
         table { 
             width: 100%; 
-            max-width: 900px; 
+            max-width: 1000px; 
             border-collapse: collapse; 
             background: var(--card-bg); 
             border-radius: 12px; 
@@ -67,6 +66,34 @@
             font-size: 14px; 
         }
         tr:hover { background-color: #2a2a2a; }
+        
+        /* 프로그레스 바 스타일 */
+        .progress-container {
+            width: 120px;
+            background-color: var(--progress-bg);
+            border-radius: 10px;
+            margin: 0 auto;
+            position: relative;
+            height: 18px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: var(--progress-fill);
+            width: 0%;
+            transition: width 0.5s ease-in-out;
+        }
+        .progress-text {
+            position: absolute;
+            width: 100%;
+            left: 0;
+            top: 0;
+            font-size: 11px;
+            line-height: 18px;
+            color: white;
+            font-weight: bold;
+        }
+
         .rank-gold { color: #ffd700; font-weight: bold; }
         .dkp-highlight { color: #ff4757; font-weight: bold; }
         .loading { margin-top: 50px; color: #888; }
@@ -77,7 +104,7 @@
     <h2>🛡️ 연맹 DKP 랭킹 보드</h2>
 
     <div class="search-container">
-        <input type="text" id="searchInput" onkeyup="filterData()" placeholder="본인의 User ID를 입력하여 검색하세요...">
+        <input type="text" id="searchInput" onkeyup="filterData()" placeholder="유저명 또는 ID를 입력하세요...">
     </div>
     
     <table id="dkpTable">
@@ -86,6 +113,7 @@
                 <th>순위</th>
                 <th>유저명</th>
                 <th>ID</th>
+                <th>목표 달성률</th>
                 <th>T4 킬</th>
                 <th>T5 킬</th>
                 <th>데스</th>
@@ -106,7 +134,6 @@
                 download: true,
                 header: true,
                 complete: function(results) {
-                    // 구글 시트에서 ueser -> user로 수정한 헤더 이름으로 매칭
                     allData = results.data
                         .filter(row => row['user name']) 
                         .sort((a, b) => parseFloat(b['DKP point']) - parseFloat(a['DKP point']));
@@ -121,16 +148,27 @@
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
 
-            data.forEach((row, index) => {
-                // 전체 데이터(allData)에서의 실제 순위를 계산
+            data.forEach((row) => {
                 const actualRank = allData.findIndex(item => item['user ID'] === row['user ID']) + 1;
                 const rankClass = actualRank <= 3 ? 'rank-gold' : '';
+
+                // 달성률 계산 (Goal은 Power의 2배라고 가정)
+                const currentDkp = parseFloat(row['DKP point'] || 0);
+                const goalDkp = parseFloat(row['Goal'] || 1); // 0 나누기 방지
+                let percent = (currentDkp / goalDkp * 100).toFixed(1);
+                const displayPercent = Math.min(percent, 100); // 바 표시는 최대 100%
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="${rankClass}">${actualRank}</td>
                     <td style="font-weight:bold; color:#f1c40f;">${row['user name']}</td>
                     <td style="color:#888;">${row['user ID']}</td>
+                    <td>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: ${displayPercent}%"></div>
+                            <div class="progress-text">${percent}%</div>
+                        </div>
+                    </td>
                     <td>${Number(row['T4 kill'] || 0).toLocaleString()}</td>
                     <td>${Number(row['T5 kill'] || 0).toLocaleString()}</td>
                     <td>${Number(row['Death'] || 0).toLocaleString()}</td>
