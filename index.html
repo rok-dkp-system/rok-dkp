@@ -7,96 +7,121 @@
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
     <style>
         :root { 
-            --primary-color: #f39c12; 
-            --bg-color: #121212; 
-            --card-bg: #1e1e1e;
-            --text-color: #e0e0e0;
-            --border-color: #333;
-            --progress-bg: #333;
-            --progress-fill: #f39c12;
+            /* 가독성을 고려한 차분한 색상으로 변경 */
+            --primary-color: #ffaa55; /* 부드러운 오렌지-Gold */
+            --highlight-color: #ff6677; /* 차분한 핑크-레드 */
+            --text-color: #d0d0d0; /* 차분한 연회색 */
+            
+            --bg-color: #0c0e11; /* 더 깊은 다크 배경 */
+            --card-bg: #16191f; /* 차분한 카드 배경 */
+            --header-bg: #1f2329; /* 헤더 전용 배경 */
+            --border-color: #2e353f; /* 차분한 테두리 */
+            
+            --progress-bg: #2e353f; /* 차분한 바 배경 */
+            --progress-fill: #ffaa55; /* 부드러운 바 채우기 색 */
         }
         body { 
-            font-family: 'Apple SD Gothic Neo', sans-serif; 
+            font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; 
             background-color: var(--bg-color); 
             color: var(--text-color); 
-            padding: 20px; 
+            padding: 30px; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
         }
-        h2 { color: var(--primary-color); margin-bottom: 20px; }
+        h2 { 
+            color: #d0d0d0; /* 제목은 흰색 톤으로 변경하여 눈 아픔 감소 */
+            margin-bottom: 30px; 
+            font-size: 26px;
+        }
 
+        /* 검색창 스타일 가독성 개선 */
         .search-container {
             width: 100%;
-            max-width: 1000px;
-            margin-bottom: 20px;
+            max-width: 1100px;
+            margin-bottom: 30px;
             display: flex;
             gap: 10px;
         }
         #searchInput {
             flex: 1;
-            padding: 12px 15px;
-            border-radius: 8px;
+            padding: 15px 20px;
+            border-radius: 10px;
             border: 1px solid var(--border-color);
             background: var(--card-bg);
             color: white;
-            font-size: 16px;
+            font-size: 17px;
         }
+        #searchInput:focus { outline: 2px solid var(--primary-color); }
 
+        /* 테이블 스타일 전면 개편 */
         table { 
             width: 100%; 
-            max-width: 1000px; 
+            max-width: 1100px; 
             border-collapse: collapse; 
             background: var(--card-bg); 
-            border-radius: 12px; 
+            border-radius: 15px; 
             overflow: hidden; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6); 
         }
         th { 
-            background-color: #2c2c2c; 
-            color: var(--primary-color); 
-            padding: 18px; 
-            font-size: 14px;
-            border-bottom: 2px solid var(--primary-color);
+            background-color: var(--header-bg); 
+            color: #909090; /* 헤더 텍스트 색상을 차분한 회색으로 변경 */
+            padding: 22px 18px; 
+            font-size: 15px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color); /* 주황색 두꺼운 테두리 삭제 */
+            letter-spacing: 0.5px;
         }
         td { 
-            padding: 15px; 
+            padding: 20px; 
             border-bottom: 1px solid var(--border-color); 
             text-align: center; 
-            font-size: 14px; 
+            font-size: 15px; 
         }
-        tr:hover { background-color: #2a2a2a; }
+        tr:last-child td { border-bottom: none; } /* 마지막 행 테두리 삭제 */
+        tr:hover { background-color: rgba(255,255,255,0.03); } /* 호버 효과 부드럽게 */
         
-        /* 프로그레스 바 스타일 */
+        /* 프로그레스 바 스타일 차분하게 */
         .progress-container {
-            width: 120px;
+            width: 130px;
             background-color: var(--progress-bg);
-            border-radius: 10px;
+            border-radius: 15px;
             margin: 0 auto;
             position: relative;
-            height: 18px;
+            height: 20px;
             overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
         }
         .progress-bar {
             height: 100%;
             background-color: var(--progress-fill);
             width: 0%;
-            transition: width 0.5s ease-in-out;
+            transition: width 0.7s ease-out; /* 부드러운 애니메이션 */
+            border-radius: 15px;
         }
         .progress-text {
             position: absolute;
             width: 100%;
             left: 0;
             top: 0;
-            font-size: 11px;
-            line-height: 18px;
-            color: white;
+            font-size: 12px;
+            line-height: 20px;
+            color: #121212; /* 텍스트는 어둡게 하여 바 색상과 대비 향상 */
             font-weight: bold;
         }
 
-        .rank-gold { color: #ffd700; font-weight: bold; }
-        .dkp-highlight { color: #ff4757; font-weight: bold; }
-        .loading { margin-top: 50px; color: #888; }
+        /* 주요 포인트 텍스트 색상 변경 */
+        .rank-gold { color: #f1c40f; font-weight: bold; } /* 부드러운 Gold */
+        .rank-silver { color: #95a5a6; font-weight: bold; } /* 차분한 Silver */
+        .rank-bronze { color: #c08050; font-weight: bold; } /* 차분한 Bronze */
+        
+        .dkp-highlight { color: var(--highlight-color); font-weight: 700; font-size: 16px; } /* 포인트 색상 완화 */
+        .loading { margin-top: 60px; color: #606060; font-size: 18px; }
+        
+        /* 유저명과 ID 색상 완화 */
+        .user-name-col { font-weight: 700; color: #e0e0e0; font-size: 16px; } 
+        .user-id-col { color: #606060; font-size: 13px; } 
     </style>
 </head>
 <body>
@@ -104,16 +129,16 @@
     <h2>🛡️ 연맹 DKP 랭킹 보드</h2>
 
     <div class="search-container">
-        <input type="text" id="searchInput" onkeyup="filterData()" placeholder="유저명 또는 ID를 입력하세요...">
+        <input type="text" id="searchInput" onkeyup="filterData()" placeholder="유저명 또는 User ID를 입력하세요...">
     </div>
     
     <table id="dkpTable">
         <thead>
             <tr>
-                <th>순위</th>
+                <th style="width: 70px;">순위</th>
                 <th>유저명</th>
-                <th>ID</th>
-                <th>목표 달성률</th>
+                <th style="width: 120px;">ID</th>
+                <th style="width: 160px;">목표 달성률</th>
                 <th>T4 킬</th>
                 <th>T5 킬</th>
                 <th>데스</th>
@@ -123,11 +148,18 @@
         <tbody id="tableBody"></tbody>
     </table>
 
-    <div id="loader" class="loading">데이터를 로딩 중...</div>
+    <div id="loader" class="loading">
+        🔄 데이터를 로딩 중... 잠시만 기다려주세요.
+    </div>
 
     <script>
         const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRd8sijeP2d8lwtLT9vbkVZN3ZwZ31saToMee7VGPjnNn5D_hefOr0yEKsNCc5886ntTXrI8-3Jmb6F/pub?gid=0&single=true&output=csv';
         let allData = [];
+
+        // 숫자에 콤마를 추가하는 헬퍼 함수
+        function formatNumber(num) {
+            return Number(num || 0).toLocaleString();
+        }
 
         function loadData() {
             Papa.parse(sheetUrl, {
@@ -150,29 +182,40 @@
 
             data.forEach((row) => {
                 const actualRank = allData.findIndex(item => item['user ID'] === row['user ID']) + 1;
-                const rankClass = actualRank <= 3 ? 'rank-gold' : '';
+                let rankClass = '';
+                if (actualRank === 1) rankClass = 'rank-gold';
+                else if (actualRank === 2) rankClass = 'rank-silver';
+                else if (actualRank === 3) rankClass = 'rank-bronze';
 
-                // 달성률 계산 (Goal은 Power의 2배라고 가정)
+                // 달성률 계산 (Goal 컬럼 데이터 사용)
                 const currentDkp = parseFloat(row['DKP point'] || 0);
                 const goalDkp = parseFloat(row['Goal'] || 1); // 0 나누기 방지
                 let percent = (currentDkp / goalDkp * 100).toFixed(1);
-                const displayPercent = Math.min(percent, 100); // 바 표시는 최대 100%
+                
+                // Infinity 방지 및 0 나누기 시 퍼센트 표시 완화
+                let displayPercent = Math.min(percent, 100); 
+                if (!isFinite(percent) || goalDkp === 0) {
+                    percent = "설정 전";
+                    displayPercent = 0;
+                } else {
+                    percent = percent + "%";
+                }
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="${rankClass}">${actualRank}</td>
-                    <td style="font-weight:bold; color:#f1c40f;">${row['user name']}</td>
-                    <td style="color:#888;">${row['user ID']}</td>
+                    <td class="user-name-col">${row['user name']}</td>
+                    <td class="user-id-col">${row['user ID']}</td>
                     <td>
                         <div class="progress-container">
                             <div class="progress-bar" style="width: ${displayPercent}%"></div>
-                            <div class="progress-text">${percent}%</div>
+                            <div class="progress-text">${percent}</div>
                         </div>
                     </td>
-                    <td>${Number(row['T4 kill'] || 0).toLocaleString()}</td>
-                    <td>${Number(row['T5 kill'] || 0).toLocaleString()}</td>
-                    <td>${Number(row['Death'] || 0).toLocaleString()}</td>
-                    <td class="dkp-highlight">${Number(row['DKP point'] || 0).toLocaleString()}</td>
+                    <td>${formatNumber(row['T4 kill'])}</td>
+                    <td>${formatNumber(row['T5 kill'])}</td>
+                    <td>${formatNumber(row['Death'])}</td>
+                    <td class="dkp-highlight">${formatNumber(row['DKP point'])}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -187,6 +230,7 @@
             displayData(filtered);
         }
 
+        // 창이 로딩될 때 데이터 로드
         window.onload = loadData;
     </script>
 </body>
