@@ -152,11 +152,10 @@
         🔄 데이터를 로딩 중... 잠시만 기다려주세요.
     </div>
 
-    <script>
+  <script>
         const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRd8sijeP2d8lwtLT9vbkVZN3ZwZ31saToMee7VGPjnNn5D_hefOr0yEKsNCc5886ntTXrI8-3Jmb6F/pub?gid=0&single=true&output=csv';
         let allData = [];
 
-        // 숫자에 콤마를 추가하는 헬퍼 함수
         function formatNumber(num) {
             return Number(num || 0).toLocaleString();
         }
@@ -166,9 +165,10 @@
                 download: true,
                 header: true,
                 complete: function(results) {
+                    // 시트 헤더 명칭 '유저명'과 '킬포'로 매핑
                     allData = results.data
-                        .filter(row => row['user name']) 
-                        .sort((a, b) => parseFloat(b['DKP point']) - parseFloat(a['DKP point']));
+                        .filter(row => row['유저명']) 
+                        .sort((a, b) => parseFloat(b['킬포']) - parseFloat(a['킬포']));
 
                     displayData(allData);
                     document.querySelector('#loader').style.display = 'none';
@@ -181,21 +181,20 @@
             tbody.innerHTML = '';
 
             data.forEach((row) => {
-                const actualRank = allData.findIndex(item => item['user ID'] === row['user ID']) + 1;
+                const actualRank = allData.findIndex(item => item['ID'] === row['ID']) + 1;
                 let rankClass = '';
                 if (actualRank === 1) rankClass = 'rank-gold';
                 else if (actualRank === 2) rankClass = 'rank-silver';
                 else if (actualRank === 3) rankClass = 'rank-bronze';
 
-                // 달성률 계산 (Goal 컬럼 데이터 사용)
-                const currentDkp = parseFloat(row['DKP point'] || 0);
-                const goalDkp = parseFloat(row['Goal'] || 1); // 0 나누기 방지
-                let percent = (currentDkp / goalDkp * 100).toFixed(1);
+                // 달성률 계산 (현재 시트 기준: 킬포 / 목표)
+                const currentKp = parseFloat(row['킬포'] || 0);
+                const goalKp = parseFloat(row['목표'] || 1); 
+                let percent = (currentKp / goalKp * 100).toFixed(1);
                 
-                // Infinity 방지 및 0 나누기 시 퍼센트 표시 완화
                 let displayPercent = Math.min(percent, 100); 
-                if (!isFinite(percent) || goalDkp === 0) {
-                    percent = "설정 전";
+                if (!isFinite(percent) || goalKp === 0) {
+                    percent = "0%";
                     displayPercent = 0;
                 } else {
                     percent = percent + "%";
@@ -204,18 +203,18 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="${rankClass}">${actualRank}</td>
-                    <td class="user-name-col">${row['user name']}</td>
-                    <td class="user-id-col">${row['user ID']}</td>
+                    <td class="user-name-col">${row['유저명']}</td>
+                    <td class="user-id-col">${row['ID']}</td>
                     <td>
                         <div class="progress-container">
                             <div class="progress-bar" style="width: ${displayPercent}%"></div>
                             <div class="progress-text">${percent}</div>
                         </div>
                     </td>
-                    <td>${formatNumber(row['T4 kill'])}</td>
-                    <td>${formatNumber(row['T5 kill'])}</td>
-                    <td>${formatNumber(row['Death'])}</td>
-                    <td class="dkp-highlight">${formatNumber(row['DKP point'])}</td>
+                    <td>${formatNumber(row['T4'])}</td>
+                    <td>${formatNumber(row['T5'])}</td>
+                    <td>${formatNumber(row['데스'])}</td>
+                    <td class="dkp-highlight">${formatNumber(row['킬포'])}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -224,13 +223,12 @@
         function filterData() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const filtered = allData.filter(row => 
-                row['user ID'].toLowerCase().includes(searchTerm) || 
-                row['user name'].toLowerCase().includes(searchTerm)
+                (row['ID'] && row['ID'].toLowerCase().includes(searchTerm)) || 
+                (row['유저명'] && row['유저명'].toLowerCase().includes(searchTerm))
             );
             displayData(filtered);
         }
 
-        // 창이 로딩될 때 데이터 로드
         window.onload = loadData;
     </script>
 </body>
