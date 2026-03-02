@@ -152,15 +152,15 @@
         🔄 데이터를 로딩 중... 잠시만 기다려주세요.
     </div>
 
-  <script>
+ <script>
         const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRd8sijeP2d8lwtLT9vbkVZN3ZwZ31saToMee7VGPjnNn5D_hefOr0yEKsNCc5886ntTXrI8-3Jmb6F/pub?gid=0&single=true&output=csv';
         let allData = [];
-
-        // ⭐ 설정값: 필요에 따라 아래 숫자들을 수정하세요!
-        const goalMultiplier = 2; // 목표 = 전력 * n배
-        const t4Weight = 1;       // T4 킬 가중치
-        const t5Weight = 4;       // T5 킬 가중치
-        const deadWeight = 10;    // 데스 가중치
+        let currentData = [];
+        let sortOrder = { kp: -1, percent: -1 }; // 기본 내림차순 설정
+       
+        //수치 변경이 여기 수정
+        const goalMultiplier = 2; 
+        const t4Weight = 1, t5Weight = 4, deadWeight = 10;
 
         function formatNumber(num) {
             return Number(num || 0).toLocaleString();
@@ -173,84 +173,78 @@
                 skipEmptyLines: true,
                 complete: function(results) {
                     allData = results.data.map(row => {
-                        const currentPower = parseFloat(row['전력'] || 0);
+                        const pwr = parseFloat(row['전력'] || 0);
                         const t4 = parseFloat(row['T4'] || 0);
                         const t5 = parseFloat(row['T5'] || 0);
-                        const dead = parseFloat(row['데스'] || 0);
+                        const d = parseFloat(row['데스'] || 0);
+                        const dkp = (t4 * t4Weight) + (t5 * t5Weight) + (d * deadWeight);
+                        const goal = pwr * goalMultiplier || 1;
                         
-                        // 1. 총 DKP 계산 (계산식 적용)
-                        const calculatedDkp = (t4 * t4Weight) + (t5 * t5Weight) + (dead * deadWeight);
-                        
-                        // 2. 목표 설정 (전력 * n배)
-                        const calculatedGoal = currentPower * goalMultiplier;
-
                         return {
                             name: row['이름'] || '',
                             id: row['ID'] || '',
-                            power: currentPower,
-                            kp: calculatedDkp, // 계산된 DKP를 포인트로 사용
-                            t4: t4,
-                            t5: t5,
-                            dead: dead,
-                            goal: calculatedGoal > 0 ? calculatedGoal : 1
+                            dkp: dkp,
+                            percent: (dkp / goal * 100),
+                            t4: t4, t5: t5, dead: d, goal: goal
                         };
-                    }).filter(item => item.name !== ""); 
+                    }).filter(item => item.name !== "");
 
-                    // 총 DKP 기준 내림차순 정렬
-                    allData.sort((a, b) => b.kp - a.kp);
-
-                    if (allData.length > 0) {
-                        displayData(allData);
-                        document.querySelector('#loader').style.display = 'none';
-                    } else {
-                        document.querySelector('#loader').innerText = "⚠️ 데이터를 불러왔으나 표시할 내용이 없습니다.";
-                    }
+                    currentData = [...allData];
+                    sortBy('dkp'); // 초기 로드 시 DKP 높은 순
                 }
             });
+        }
+
+        // 정렬 함수: 컬럼명을 클릭하면 호출됨
+        function sortBy(column) {
+            sortOrder[column] *= -1; // 클릭 시 정렬 방향 반전
+            
+            currentData.sort((a, b) => {
+                let valA = a[column];
+                let valB = b[column];
+                return (valA < valB ? -1 : valA > valB ? 1 : 0) * sortOrder[column];
+            });
+            
+            displayData(currentData);
         }
 
         function displayData(data) {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
+            
+            // 성능을 위해 상위 500명만 먼저 렌더링 (7300명 전체 출력 시 렉 방지)
+            const topData = data.slice(0, 500); 
 
-            data.forEach((item, index) => {
-                const actualRank = index + 1;
-                let rankClass = '';
-                if (actualRank === 1) rankClass = 'rank-gold';
-                else if (actualRank === 2) rankClass = 'rank-silver';
-                else if (actualRank === 3) rankClass = 'rank-bronze';
-
-                let percentVal = (item.kp / item.goal * 100);
-                let displayPercent = Math.min(percentVal, 100);
-                let percentText = isFinite(percentVal) ? percentVal.toFixed(1) + "%" : "0%";
-
+            topData.forEach((item, index) => {
                 const tr = document.createElement('tr');
+                let displayPercent = Math.min(item.percent, 100);
+                
                 tr.innerHTML = `
-                    <td class="${rankClass}">${actualRank}</td>
+                    <td>${index + 1}</td>
                     <td class="user-name-col">${item.name}</td>
                     <td class="user-id-col">${item.id}</td>
                     <td>
-                        <div class="progress-container" title="목표 DKP: ${formatNumber(item.goal)}">
+                        <div class="progress-container" title="목표: ${formatNumber(item.goal)}">
                             <div class="progress-bar" style="width: ${displayPercent}%"></div>
-                            <div class="progress-text">${percentText}</div>
+                            <div class="progress-text">${item.percent.toFixed(1)}%</div>
                         </div>
                     </td>
                     <td>${formatNumber(item.t4)}</td>
                     <td>${formatNumber(item.t5)}</td>
                     <td>${formatNumber(item.dead)}</td>
-                    <td class="dkp-highlight">${formatNumber(item.kp)}</td>
+                    <td class="dkp-highlight">${formatNumber(item.dkp)}</td>
                 `;
                 tbody.appendChild(tr);
             });
+            document.querySelector('#loader').style.display = 'none';
         }
 
         function filterData() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = allData.filter(item => 
-                (item.id && item.id.toString().toLowerCase().includes(searchTerm)) || 
-                (item.name && item.name.toLowerCase().includes(searchTerm))
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            currentData = allData.filter(item => 
+                item.id.toString().includes(term) || item.name.toLowerCase().includes(term)
             );
-            displayData(filtered);
+            displayData(currentData);
         }
 
         window.onload = loadData;
