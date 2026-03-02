@@ -130,6 +130,10 @@
 
     <div class="search-container">
         <input type="text" id="searchInput" onkeyup="filterData()" placeholder="유저명 또는 User ID를 입력하세요...">
+        <div style="width: 100%; max-width: 1100px; margin-bottom: 15px; display: flex; gap: 10px; justify-content: center;">
+    <button onclick="sortBy('dkp')" style="padding: 10px 20px; border-radius: 8px; border: 1px solid var(--primary-color); background: var(--card-bg); color: var(--primary-color); cursor: pointer; font-weight: bold;">총 DKP 높은순/낮은순</button>
+    <button onclick="sortBy('percent')" style="padding: 10px 20px; border-radius: 8px; border: 1px solid var(--highlight-color); background: var(--card-bg); color: var(--highlight-color); cursor: pointer; font-weight: bold;">달성률 높은순/낮은순</button>
+</div>
     </div>
     
     <table id="dkpTable">
@@ -152,102 +156,107 @@
         🔄 데이터를 로딩 중... 잠시만 기다려주세요.
     </div>
 
- <script>
-        const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRd8sijeP2d8lwtLT9vbkVZN3ZwZ31saToMee7VGPjnNn5D_hefOr0yEKsNCc5886ntTXrI8-3Jmb6F/pub?gid=0&single=true&output=csv';
-        let allData = [];
-        let currentData = [];
-        let sortOrder = { kp: -1, percent: -1 }; // 기본 내림차순 설정
+<script>
+    const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRd8sijeP2d8lwtLT9vbkVZN3ZwZ31saToMee7VGPjnNn5D_hefOr0yEKsNCc5886ntTXrI8-3Jmb6F/pub?gid=0&single=true&output=csv';
+    
+    let allData = [];      
+    let currentData = [];  
+    let sortStatus = { percent: -1, dkp: -1 }; // 기본 내림차순 시작
 
-        const goalMultiplier = 2; 
-        const t4Weight = 1, t5Weight = 4, deadWeight = 10;
+    const goalMultiplier = 2; 
+    const weights = { t4: 1, t5: 4, dead: 10 };
 
-        function formatNumber(num) {
-            return Number(num || 0).toLocaleString();
-        }
+    function formatNumber(num) {
+        return Number(num || 0).toLocaleString();
+    }
 
-        function loadData() {
-            Papa.parse(sheetUrl, {
-                download: true,
-                header: true,
-                skipEmptyLines: true,
-                complete: function(results) {
-                    allData = results.data.map(row => {
-                        const pwr = parseFloat(row['전력'] || 0);
-                        const t4 = parseFloat(row['T4'] || 0);
-                        const t5 = parseFloat(row['T5'] || 0);
-                        const d = parseFloat(row['데스'] || 0);
-                        const dkp = (t4 * t4Weight) + (t5 * t5Weight) + (d * deadWeight);
-                        const goal = pwr * goalMultiplier || 1;
-                        
-                        return {
-                            name: row['이름'] || '',
-                            id: row['ID'] || '',
-                            dkp: dkp,
-                            percent: (dkp / goal * 100),
-                            t4: t4, t5: t5, dead: d, goal: goal
-                        };
-                    }).filter(item => item.name !== "");
+    function loadData() {
+        Papa.parse(sheetUrl, {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                allData = results.data.map(row => {
+                    const pwr = parseFloat(row['전력'] || 0);
+                    const t4 = parseFloat(row['T4'] || 0);
+                    const t5 = parseFloat(row['T5'] || 0);
+                    const d = parseFloat(row['데스'] || 0);
+                    
+                    const dkp = (t4 * weights.t4) + (t5 * weights.t5) + (d * weights.dead);
+                    const goal = pwr * goalMultiplier || 1;
+                    
+                    return {
+                        name: row['이름'] || '',
+                        id: row['ID'] || '',
+                        dkp: dkp,
+                        percent: (dkp / goal * 100),
+                        t4: t4, t5: t5, dead: d, goal: goal
+                    };
+                }).filter(item => item.name !== "");
 
-                    currentData = [...allData];
-                    sortBy('dkp'); // 초기 로드 시 DKP 높은 순
-                }
-            });
-        }
+                currentData = [...allData];
+                sortBy('dkp'); // 초기 로드 시 DKP 높은 순 정렬
+            }
+        });
+    }
 
-        // 정렬 함수: 컬럼명을 클릭하면 호출됨
-        function sortBy(column) {
-            sortOrder[column] *= -1; // 클릭 시 정렬 방향 반전
+    function sortBy(column) {
+        // 정렬 상태 반전
+        sortStatus[column] *= -1;
+        const dir = sortStatus[column];
+
+        currentData.sort((a, b) => {
+            return (a[column] < b[column] ? -1 : a[column] > b[column] ? 1 : 0) * dir;
+        });
+
+        displayData(currentData);
+    }
+
+    function displayData(data) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+
+        // 7300명 출력 시 브라우저 부하 방지를 위해 문서 파편화 사용
+        const fragment = document.createDocumentFragment();
+
+        data.forEach((item, index) => {
+            const tr = document.createElement('tr');
+            let displayPercent = Math.min(item.percent, 100);
             
-            currentData.sort((a, b) => {
-                let valA = a[column];
-                let valB = b[column];
-                return (valA < valB ? -1 : valA > valB ? 1 : 0) * sortOrder[column];
-            });
-            
-            displayData(currentData);
-        }
+            tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td class="user-name-col">${item.name}</td>
+                <td class="user-id-col">${item.id}</td>
+                <td>
+                    <div class="progress-container" title="목표: ${formatNumber(item.goal)}">
+                        <div class="progress-bar" style="width: ${displayPercent}%"></div>
+                        <div class="progress-text">${item.percent.toFixed(1)}%</div>
+                    </div>
+                </td>
+                <td>${formatNumber(item.t4)}</td>
+                <td>${formatNumber(item.t5)}</td>
+                <td>${formatNumber(item.dead)}</td>
+                <td class="dkp-highlight">${formatNumber(item.dkp)}</td>
+            `;
+            fragment.appendChild(tr);
+        });
 
-        function displayData(data) {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
-            
-            // 성능을 위해 상위 500명만 먼저 렌더링 (7300명 전체 출력 시 렉 방지)
-            const topData = data.slice(0, 500); 
+        tbody.appendChild(fragment);
+        document.querySelector('#loader').style.display = 'none';
+    }
 
-            topData.forEach((item, index) => {
-                const tr = document.createElement('tr');
-                let displayPercent = Math.min(item.percent, 100);
-                
-                tr.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td class="user-name-col">${item.name}</td>
-                    <td class="user-id-col">${item.id}</td>
-                    <td>
-                        <div class="progress-container" title="목표: ${formatNumber(item.goal)}">
-                            <div class="progress-bar" style="width: ${displayPercent}%"></div>
-                            <div class="progress-text">${item.percent.toFixed(1)}%</div>
-                        </div>
-                    </td>
-                    <td>${formatNumber(item.t4)}</td>
-                    <td>${formatNumber(item.t5)}</td>
-                    <td>${formatNumber(item.dead)}</td>
-                    <td class="dkp-highlight">${formatNumber(item.dkp)}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-            document.querySelector('#loader').style.display = 'none';
-        }
+    function filterData() {
+        const term = document.getElementById('searchInput').value.toLowerCase();
+        currentData = allData.filter(item => 
+            item.id.toString().toLowerCase().includes(term) || 
+            item.name.toLowerCase().includes(term)
+        );
+        // 검색 시에는 다시 정렬 상태를 초기화하거나 현재 상태 유지
+        displayData(currentData);
+    }
 
-        function filterData() {
-            const term = document.getElementById('searchInput').value.toLowerCase();
-            currentData = allData.filter(item => 
-                item.id.toString().includes(term) || item.name.toLowerCase().includes(term)
-            );
-            displayData(currentData);
-        }
-
-        window.onload = loadData;
-    </script>
+    window.onload = loadData;
+</script>
     
 </body>
 </html>
