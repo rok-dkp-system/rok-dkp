@@ -153,83 +153,99 @@
     </div>
 
   <script>
-        const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRd8sijeP2d8lwtLT9vbkVZN3ZwZ31saToMee7VGPjnNn5D_hefOr0yEKsNCc5886ntTXrI8-3Jmb6F/pub?gid=0&single=true&output=csv';
-        let allData = [];
+    // 1. 본인의 구글 시트 웹 게시 CSV 주소를 여기에 넣으세요.
+    const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRd8sijeP2d8lwtLT9vbkVZN3ZwZ31saToMee7VGPjnNn5D_hefOr0yEKsNCc5886ntTXrI8-3Jmb6F/pub?gid=0&single=true&output=csv';
+    let allData = [];
 
-        function formatNumber(num) {
-            return Number(num || 0).toLocaleString();
-        }
+    function formatNumber(num) {
+        return Number(num || 0).toLocaleString();
+    }
 
-        function loadData() {
-            Papa.parse(sheetUrl, {
-                download: true,
-                header: true,
-                complete: function(results) {
-                    // 시트 헤더 명칭 '유저명'과 '킬포'로 매핑
-                    allData = results.data
-                        .filter(row => row['유저명']) 
-                        .sort((a, b) => parseFloat(b['킬포']) - parseFloat(a['킬포']));
+    function loadData() {
+        Papa.parse(sheetUrl, {
+            download: true,
+            header: true,
+            skipEmptyLines: true, // 빈 줄 무시
+            complete: function(results) {
+                console.log("Raw Data:", results.data); // 데이터 확인용 로그
 
-                    displayData(allData);
-                    document.querySelector('#loader').style.display = 'none';
-                }
-            });
-        }
+                allData = results.data.map(row => {
+                    // 한글/영어 헤더 모두 대응 (시트에 적힌 이름대로 매칭)
+                    return {
+                        name: row['유저명'] || row['Governor Name'] || row['name'] || '',
+                        id: row['ID'] || row['Governor ID'] || row['id'] || '',
+                        power: row['전력'] || row['Power'] || 0,
+                        kp: row['킬포'] || row['Kill Points'] || row['KP'] || 0,
+                        t4: row['T4'] || 0,
+                        t5: row['T5'] || 0,
+                        dead: row['데스'] || row['Dead'] || row['dead'] || 0,
+                        goal: row['목표'] || row['Goal'] || 1
+                    };
+                }).filter(item => item.name !== ""); // 이름 없는 행 제외
 
-        function displayData(data) {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
+                // 킬포 기준 내림차순 정렬
+                allData.sort((a, b) => parseFloat(b.kp) - parseFloat(a.kp));
 
-            data.forEach((row) => {
-                const actualRank = allData.findIndex(item => item['ID'] === row['ID']) + 1;
-                let rankClass = '';
-                if (actualRank === 1) rankClass = 'rank-gold';
-                else if (actualRank === 2) rankClass = 'rank-silver';
-                else if (actualRank === 3) rankClass = 'rank-bronze';
+                displayData(allData);
+                document.querySelector('#loader').style.display = 'none';
+            },
+            error: function(err) {
+                console.error("CSV 로딩 에러:", err);
+                document.querySelector('#loader').innerText = "❌ 데이터를 불러오지 못했습니다. 시트 설정을 확인하세요.";
+            }
+        });
+    }
 
-                // 달성률 계산 (현재 시트 기준: 킬포 / 목표)
-                const currentKp = parseFloat(row['킬포'] || 0);
-                const goalKp = parseFloat(row['목표'] || 1); 
-                let percent = (currentKp / goalKp * 100).toFixed(1);
-                
-                let displayPercent = Math.min(percent, 100); 
-                if (!isFinite(percent) || goalKp === 0) {
-                    percent = "0%";
-                    displayPercent = 0;
-                } else {
-                    percent = percent + "%";
-                }
+    function displayData(data) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
 
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="${rankClass}">${actualRank}</td>
-                    <td class="user-name-col">${row['유저명']}</td>
-                    <td class="user-id-col">${row['ID']}</td>
-                    <td>
-                        <div class="progress-container">
-                            <div class="progress-bar" style="width: ${displayPercent}%"></div>
-                            <div class="progress-text">${percent}</div>
-                        </div>
-                    </td>
-                    <td>${formatNumber(row['T4'])}</td>
-                    <td>${formatNumber(row['T5'])}</td>
-                    <td>${formatNumber(row['데스'])}</td>
-                    <td class="dkp-highlight">${formatNumber(row['킬포'])}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
+        data.forEach((item, index) => {
+            const actualRank = index + 1;
+            let rankClass = '';
+            if (actualRank === 1) rankClass = 'rank-gold';
+            else if (actualRank === 2) rankClass = 'rank-silver';
+            else if (actualRank === 3) rankClass = 'rank-bronze';
 
-        function filterData() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = allData.filter(row => 
-                (row['ID'] && row['ID'].toLowerCase().includes(searchTerm)) || 
-                (row['유저명'] && row['유저명'].toLowerCase().includes(searchTerm))
-            );
-            displayData(filtered);
-        }
+            // 달성률 계산
+            const currentKp = parseFloat(item.kp || 0);
+            const goalKp = parseFloat(item.goal || 1); 
+            let percentVal = (currentKp / goalKp * 100);
+            let displayPercent = Math.min(percentVal, 100);
+            
+            let percentText = isFinite(percentVal) ? percentVal.toFixed(1) + "%" : "0%";
 
-        window.onload = loadData;
-    </script>
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="${rankClass}">${actualRank}</td>
+                <td class="user-name-col">${item.name}</td>
+                <td class="user-id-col">${item.id}</td>
+                <td>
+                    <div class="progress-container">
+                        <div class="progress-bar" style="width: ${displayPercent}%"></div>
+                        <div class="progress-text">${percentText}</div>
+                    </div>
+                </td>
+                <td>${formatNumber(item.t4)}</td>
+                <td>${formatNumber(item.t5)}</td>
+                <td>${formatNumber(item.dead)}</td>
+                <td class="dkp-highlight">${formatNumber(item.kp)}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function filterData() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const filtered = allData.filter(item => 
+            item.id.toString().toLowerCase().includes(searchTerm) || 
+            item.name.toLowerCase().includes(searchTerm)
+        );
+        displayData(filtered);
+    }
+
+    window.onload = loadData;
+</script>
+    
 </body>
 </html>
