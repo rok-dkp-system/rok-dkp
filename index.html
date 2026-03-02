@@ -156,8 +156,11 @@
         const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRd8sijeP2d8lwtLT9vbkVZN3ZwZ31saToMee7VGPjnNn5D_hefOr0yEKsNCc5886ntTXrI8-3Jmb6F/pub?gid=0&single=true&output=csv';
         let allData = [];
 
-        // ⭐ 나중에 목표 배율을 바꾸려면 아래 숫자 '2'를 수정하세요!
-        const goalMultiplier = 2; 
+        // ⭐ 설정값: 필요에 따라 아래 숫자들을 수정하세요!
+        const goalMultiplier = 2; // 목표 = 전력 * n배
+        const t4Weight = 1;       // T4 킬 가중치
+        const t5Weight = 4;       // T5 킬 가중치
+        const deadWeight = 10;    // 데스 가중치
 
         function formatNumber(num) {
             return Number(num || 0).toLocaleString();
@@ -171,26 +174,29 @@
                 complete: function(results) {
                     allData = results.data.map(row => {
                         const currentPower = parseFloat(row['전력'] || 0);
-                        const currentKp = parseFloat(row['킬포'] || 0);
+                        const t4 = parseFloat(row['T4'] || 0);
+                        const t5 = parseFloat(row['T5'] || 0);
+                        const dead = parseFloat(row['데스'] || 0);
                         
-                       // ⭐ 설정값: 필요에 따라 아래 숫자들을 수정하세요!
-                            const goalMultiplier = 2; // 목표 = 전력 * n배
-                            const t4Weight = 1;       // T4 킬 가중치
-                            const t5Weight = 4;       // T5 킬 가중치
-                            const deadWeight = 10;    // 데스 가중치
+                        // 1. 총 DKP 계산 (계산식 적용)
+                        const calculatedDkp = (t4 * t4Weight) + (t5 * t5Weight) + (dead * deadWeight);
+                        
+                        // 2. 목표 설정 (전력 * n배)
+                        const calculatedGoal = currentPower * goalMultiplier;
 
                         return {
                             name: row['이름'] || '',
                             id: row['ID'] || '',
                             power: currentPower,
-                            kp: currentKp,
-                            t4: row['T4'] || 0,
-                            t5: row['T5'] || 0,
-                            dead: row['데스'] || 0,
-                            goal: calculatedGoal > 0 ? calculatedGoal : 1 // 0 나누기 방지
+                            kp: calculatedDkp, // 계산된 DKP를 포인트로 사용
+                            t4: t4,
+                            t5: t5,
+                            dead: dead,
+                            goal: calculatedGoal > 0 ? calculatedGoal : 1
                         };
                     }).filter(item => item.name !== ""); 
 
+                    // 총 DKP 기준 내림차순 정렬
                     allData.sort((a, b) => b.kp - a.kp);
 
                     if (allData.length > 0) {
@@ -214,7 +220,6 @@
                 else if (actualRank === 2) rankClass = 'rank-silver';
                 else if (actualRank === 3) rankClass = 'rank-bronze';
 
-                // 달성률 계산 (킬포 / 계산된 목표)
                 let percentVal = (item.kp / item.goal * 100);
                 let displayPercent = Math.min(percentVal, 100);
                 let percentText = isFinite(percentVal) ? percentVal.toFixed(1) + "%" : "0%";
@@ -225,7 +230,7 @@
                     <td class="user-name-col">${item.name}</td>
                     <td class="user-id-col">${item.id}</td>
                     <td>
-                        <div class="progress-container" title="목표: ${formatNumber(item.goal)}">
+                        <div class="progress-container" title="목표 DKP: ${formatNumber(item.goal)}">
                             <div class="progress-bar" style="width: ${displayPercent}%"></div>
                             <div class="progress-text">${percentText}</div>
                         </div>
