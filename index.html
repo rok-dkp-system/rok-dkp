@@ -153,99 +153,100 @@
     </div>
 
   <script>
-    // 1. 본인의 구글 시트 웹 게시 CSV 주소를 여기에 넣으세요.
-    const sheetUrl = 'https://docs.google.com/spreadsheets/d/1uhbtunnLrPxAT7wW2DxLkBzQn0Uo8ewZf0iy46EiSfI/edit?gid=0#gid=0;
-    let allData = [];
+        const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRd8sijeP2d8lwtLT9vbkVZN3ZwZ31saToMee7VGPjnNn5D_hefOr0yEKsNCc5886ntTXrI8-3Jmb6F/pub?gid=0&single=true&output=csv';
+        let allData = [];
 
-    function formatNumber(num) {
-        return Number(num || 0).toLocaleString();
-    }
+        // ⭐ 나중에 목표 배율을 바꾸려면 아래 숫자 '2'를 수정하세요!
+        const goalMultiplier = 2; 
 
-    function loadData() {
-        Papa.parse(sheetUrl, {
-            download: true,
-            header: true,
-            skipEmptyLines: true, // 빈 줄 무시
-            complete: function(results) {
-                console.log("Raw Data:", results.data); // 데이터 확인용 로그
+        function formatNumber(num) {
+            return Number(num || 0).toLocaleString();
+        }
 
-                allData = results.data.map(row => {
-                    // 한글/영어 헤더 모두 대응 (시트에 적힌 이름대로 매칭)
-                    return {
-                        name: row['유저명'] || row['Governor Name'] || row['name'] || '',
-                        id: row['ID'] || row['Governor ID'] || row['id'] || '',
-                        power: row['전력'] || row['Power'] || 0,
-                        kp: row['킬포'] || row['Kill Points'] || row['KP'] || 0,
-                        t4: row['T4'] || 0,
-                        t5: row['T5'] || 0,
-                        dead: row['데스'] || row['Dead'] || row['dead'] || 0,
-                        goal: row['목표'] || row['Goal'] || 1
-                    };
-                }).filter(item => item.name !== ""); // 이름 없는 행 제외
+        function loadData() {
+            Papa.parse(sheetUrl, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    allData = results.data.map(row => {
+                        const currentPower = parseFloat(row['전력'] || 0);
+                        const currentKp = parseFloat(row['킬포'] || 0);
+                        
+                        // 목표 설정: 전력의 n배 (여기서는 2배)
+                        const calculatedGoal = currentPower * goalMultiplier;
 
-                // 킬포 기준 내림차순 정렬
-                allData.sort((a, b) => parseFloat(b.kp) - parseFloat(a.kp));
+                        return {
+                            name: row['이름'] || '',
+                            id: row['ID'] || '',
+                            power: currentPower,
+                            kp: currentKp,
+                            t4: row['T4'] || 0,
+                            t5: row['T5'] || 0,
+                            dead: row['데스'] || 0,
+                            goal: calculatedGoal > 0 ? calculatedGoal : 1 // 0 나누기 방지
+                        };
+                    }).filter(item => item.name !== ""); 
 
-                displayData(allData);
-                document.querySelector('#loader').style.display = 'none';
-            },
-            error: function(err) {
-                console.error("CSV 로딩 에러:", err);
-                document.querySelector('#loader').innerText = "❌ 데이터를 불러오지 못했습니다. 시트 설정을 확인하세요.";
-            }
-        });
-    }
+                    allData.sort((a, b) => b.kp - a.kp);
 
-    function displayData(data) {
-        const tbody = document.getElementById('tableBody');
-        tbody.innerHTML = '';
+                    if (allData.length > 0) {
+                        displayData(allData);
+                        document.querySelector('#loader').style.display = 'none';
+                    } else {
+                        document.querySelector('#loader').innerText = "⚠️ 데이터를 불러왔으나 표시할 내용이 없습니다.";
+                    }
+                }
+            });
+        }
 
-        data.forEach((item, index) => {
-            const actualRank = index + 1;
-            let rankClass = '';
-            if (actualRank === 1) rankClass = 'rank-gold';
-            else if (actualRank === 2) rankClass = 'rank-silver';
-            else if (actualRank === 3) rankClass = 'rank-bronze';
+        function displayData(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
 
-            // 달성률 계산
-            const currentKp = parseFloat(item.kp || 0);
-            const goalKp = parseFloat(item.goal || 1); 
-            let percentVal = (currentKp / goalKp * 100);
-            let displayPercent = Math.min(percentVal, 100);
-            
-            let percentText = isFinite(percentVal) ? percentVal.toFixed(1) + "%" : "0%";
+            data.forEach((item, index) => {
+                const actualRank = index + 1;
+                let rankClass = '';
+                if (actualRank === 1) rankClass = 'rank-gold';
+                else if (actualRank === 2) rankClass = 'rank-silver';
+                else if (actualRank === 3) rankClass = 'rank-bronze';
 
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="${rankClass}">${actualRank}</td>
-                <td class="user-name-col">${item.name}</td>
-                <td class="user-id-col">${item.id}</td>
-                <td>
-                    <div class="progress-container">
-                        <div class="progress-bar" style="width: ${displayPercent}%"></div>
-                        <div class="progress-text">${percentText}</div>
-                    </div>
-                </td>
-                <td>${formatNumber(item.t4)}</td>
-                <td>${formatNumber(item.t5)}</td>
-                <td>${formatNumber(item.dead)}</td>
-                <td class="dkp-highlight">${formatNumber(item.kp)}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
+                // 달성률 계산 (킬포 / 계산된 목표)
+                let percentVal = (item.kp / item.goal * 100);
+                let displayPercent = Math.min(percentVal, 100);
+                let percentText = isFinite(percentVal) ? percentVal.toFixed(1) + "%" : "0%";
 
-    function filterData() {
-        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-        const filtered = allData.filter(item => 
-            item.id.toString().toLowerCase().includes(searchTerm) || 
-            item.name.toLowerCase().includes(searchTerm)
-        );
-        displayData(filtered);
-    }
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="${rankClass}">${actualRank}</td>
+                    <td class="user-name-col">${item.name}</td>
+                    <td class="user-id-col">${item.id}</td>
+                    <td>
+                        <div class="progress-container" title="목표: ${formatNumber(item.goal)}">
+                            <div class="progress-bar" style="width: ${displayPercent}%"></div>
+                            <div class="progress-text">${percentText}</div>
+                        </div>
+                    </td>
+                    <td>${formatNumber(item.t4)}</td>
+                    <td>${formatNumber(item.t5)}</td>
+                    <td>${formatNumber(item.dead)}</td>
+                    <td class="dkp-highlight">${formatNumber(item.kp)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
 
-    window.onload = loadData;
-</script>
+        function filterData() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allData.filter(item => 
+                (item.id && item.id.toString().toLowerCase().includes(searchTerm)) || 
+                (item.name && item.name.toLowerCase().includes(searchTerm))
+            );
+            displayData(filtered);
+        }
+
+        window.onload = loadData;
+    </script>
     
 </body>
 </html>
