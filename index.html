@@ -173,8 +173,11 @@
                         const currentPower = parseFloat(row['전력'] || 0);
                         const currentKp = parseFloat(row['킬포'] || 0);
                         
-                        // 목표 설정: 전력의 n배 (여기서는 2배)
-                        const calculatedGoal = currentPower * goalMultiplier;
+                       // ⭐ 설정값: 필요에 따라 아래 숫자들을 수정하세요!
+                            const goalMultiplier = 2; // 목표 = 전력 * n배
+                            const t4Weight = 1;       // T4 킬 가중치
+                            const t5Weight = 4;       // T5 킬 가중치
+                            const deadWeight = 10;    // 데스 가중치
 
                         return {
                             name: row['이름'] || '',
