@@ -130,9 +130,15 @@
 
     <div class="search-container">
         <input type="text" id="searchInput" onkeyup="filterData()" placeholder="유저명 또는 User ID를 입력하세요...">
-       <div style="width: 100%; max-width: 1100px; margin-bottom: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-    <button onclick="sortBy('percent')" style="padding: 12px 24px; border-radius: 10px; border: 1px solid #3498db; background: var(--card-bg); color: #3498db; cursor: pointer; font-weight: bold; transition: 0.3s;">📊 달성률 정렬 (높은순/낮은순)</button>
-    <button onclick="sortBy('dkp')" style="padding: 12px 24px; border-radius: 10px; border: 1px solid #e67e22; background: var(--card-bg); color: #e67e22; cursor: pointer; font-weight: bold; transition: 0.3s;">🚀 총 DKP 정렬 (높은순/낮은순)</button>
+       <div style="width: 100%; max-width: 1100px; margin-bottom: 10px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+    <button onclick="sortBy('percent')" style="padding: 12px 24px; border-radius: 10px; border: 1px solid #3498db; background: var(--card-bg); color: #3498db; cursor: pointer; font-weight: bold;">📊 달성률 정렬</button>
+    <button onclick="sortBy('dkp')" style="padding: 12px 24px; border-radius: 10px; border: 1px solid #e67e22; background: var(--card-bg); color: #e67e22; cursor: pointer; font-weight: bold;">🚀 총 DKP 정렬</button>
+</div>
+
+<div style="width: 100%; max-width: 1100px; margin-bottom: 20px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+    <button onclick="sortBy('t4')" style="padding: 5px 12px; border-radius: 6px; border: 1px solid #95a5a6; background: transparent; color: #95a5a6; cursor: pointer; font-size: 12px;">T4 정렬 ↕</button>
+    <button onclick="sortBy('t5')" style="padding: 5px 12px; border-radius: 6px; border: 1px solid #95a5a6; background: transparent; color: #95a5a6; cursor: pointer; font-size: 12px;">T5 정렬 ↕</button>
+    <button onclick="sortBy('dead')" style="padding: 5px 12px; border-radius: 6px; border: 1px solid #95a5a6; background: transparent; color: #95a5a6; cursor: pointer; font-size: 12px;">데스 정렬 ↕</button>
 </div>
         <style>
     /* 달성률 프로그레스 바 색상 (Blue) */
@@ -172,8 +178,8 @@
         
         let allData = [];      
         let currentData = [];  
-        // 초기 정렬 방향 설정 (1로 설정해야 sortBy 실행 시 -1이 되어 내림차순이 됨)
-        let sortStatus = { percent: 1, dkp: 1 }; 
+        // 모든 항목에 대해 정렬 상태 관리
+        let sortStatus = { percent: 1, dkp: 1, t4: 1, t5: 1, dead: 1 }; 
 
         const goalMultiplier = 2; 
         const weights = { t4: 1, t5: 4, dead: 10 };
@@ -193,7 +199,6 @@
                         const t4 = parseFloat(row['T4'] || 0);
                         const t5 = parseFloat(row['T5'] || 0);
                         const d = parseFloat(row['데스'] || 0);
-                        
                         const dkp = (t4 * weights.t4) + (t5 * weights.t5) + (d * weights.dead);
                         const goal = pwr * goalMultiplier || 1;
                         
@@ -207,20 +212,19 @@
                     }).filter(item => item.name !== "");
 
                     currentData = [...allData];
-                    
-                    // [최초 접속 시] 목표 달성률(percent) 높은 순으로 자동 정렬
-                    sortBy('percent'); 
+                    sortBy('percent'); // 초기 로드 시 달성률 높은 순
                 }
             });
         }
 
         function sortBy(column) {
-            // 클릭할 때마다 정렬 방향 반전 (1 ↔ -1)
             sortStatus[column] *= -1;
             const dir = sortStatus[column];
 
             currentData.sort((a, b) => {
-                return (a[column] < b[column] ? -1 : a[column] > b[column] ? 1 : 0) * dir;
+                const valA = a[column] || 0;
+                const valB = b[column] || 0;
+                return (valA < valB ? -1 : valA > valB ? 1 : 0) * dir;
             });
 
             displayData(currentData);
@@ -229,8 +233,8 @@
         function displayData(data) {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
-
             const fragment = document.createDocumentFragment();
+
             data.forEach((item, index) => {
                 const tr = document.createElement('tr');
                 let displayPercent = Math.min(item.percent, 100);
@@ -240,15 +244,15 @@
                     <td class="user-name-col">${item.name}</td>
                     <td class="user-id-col">${item.id}</td>
                     <td>
-                        <div class="progress-container" title="목표 DKP: ${formatNumber(item.goal)}">
+                        <div class="progress-container" title="목표: ${formatNumber(item.goal)}">
                             <div class="progress-bar" style="width: ${displayPercent}%"></div>
-                            <div class="progress-text">${item.percent.toFixed(1)}%</div>
+                            <div class="progress-text" style="color: white; font-weight: bold;">${item.percent.toFixed(1)}%</div>
                         </div>
                     </td>
                     <td>${formatNumber(item.t4)}</td>
                     <td>${formatNumber(item.t5)}</td>
                     <td>${formatNumber(item.dead)}</td>
-                    <td class="dkp-highlight">${formatNumber(item.dkp)}</td>
+                    <td class="dkp-highlight" style="color: #e67e22; font-weight: bold;">${formatNumber(item.dkp)}</td>
                 `;
                 fragment.appendChild(tr);
             });
@@ -268,6 +272,3 @@
 
         window.onload = loadData;
     </script>
-    
-</body>
-</html>
