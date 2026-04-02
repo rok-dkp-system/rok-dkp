@@ -153,7 +153,7 @@
         let currentData = [];  
         let sortStatus = { percent: 1, dkp: 1, t4: 1, t5: 1, dead: 1 }; 
 
-        const goalMultiplier = 2; 
+        const goalMultiplier = 0.5; // 해당부분 숫자 변경시 dkp 요구수치 변경
         const weights = { t4: 1, t5: 4, dead: 10 };
 
         function formatNumber(num) {
@@ -175,7 +175,7 @@
                         const d = parseFloat(row['T4 사망'] || 0) + parseFloat(row['T5 사망'] || 0);
                         
                         const dkp = (t4 * weights.t4) + (t5 * weights.t5) + (d * weights.dead);
-                        const goal = pwr * goalMultiplier || 1; // 해당부분 숫자 변경시 dkp 요구수치 변경
+                        const goal = pwr * goalMultiplier || 1; 
                         
                         return {
                             name: row['캐릭터 닉네임'] || '',
