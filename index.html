@@ -7,25 +7,30 @@
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
     <style>
         :root { 
-            --primary-color: #ffaa55; 
-            --highlight-color: #ff6677; 
-            --text-color: #d0d0d0; 
-            --bg-color: #0c0e11; 
-            --card-bg: #16191f; 
-            --header-bg: #1f2329; 
-            --border-color: #2e353f; 
-            --progress-bg: #2e353f; 
+            /* 눈이 편안한 저채도 다크 테마 색상 */
+            --bg-color: #1a1c22;        /* 깊은 다크 그레이 */
+            --card-bg: #24272e;        /* 카드 배경 */
+            --header-bg: #2d323a;      /* 헤더 배경 */
+            --text-main: #e0e0e0;      /* 주 텍스트 (순백색 지양) */
+            --text-dim: #a0a5ad;       /* 보조 텍스트 */
+            --border-color: #383e47;   /* 경계선 */
+            --accent-gold: #d4af37;    /* DKP 강조 (톤다운된 골드) */
+            --accent-green: #52a447;   /* 달성률 (차분한 초록) */
+            --progress-bg: #16181d;    /* 게이지 배경 */
         }
+        
         body { 
             font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; 
             background-color: var(--bg-color); 
-            color: var(--text-color); 
+            color: var(--text-main); 
             padding: 30px; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
+            margin: 0;
         }
-        h2 { color: #d0d0d0; margin-bottom: 30px; font-size: 26px; }
+
+        h2 { color: var(--text-main); margin-bottom: 30px; font-size: 24px; letter-spacing: -0.5px; }
 
         .search-container {
             width: 100%;
@@ -36,74 +41,89 @@
             align-items: center;
             gap: 15px;
         }
+
         #searchInput {
             width: 100%;
-            padding: 15px 20px;
-            border-radius: 10px;
+            padding: 14px 20px;
+            border-radius: 8px;
             border: 1px solid var(--border-color);
             background: var(--card-bg);
             color: white;
-            font-size: 17px;
+            font-size: 16px;
             box-sizing: border-box;
+            transition: border 0.3s;
         }
-        #searchInput:focus { outline: 2px solid #3498db; }
+        #searchInput:focus { outline: none; border-color: #5d6d7e; }
 
-        .btn-group-main { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
-        .btn-group-sub { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+        .btn-group-main, .btn-group-sub { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .btn-group-main { margin-bottom: 8px; }
+
+        button {
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        button:hover { background: var(--header-bg); color: var(--text-main); }
+        .btn-active-dkp { border-color: var(--accent-gold); color: var(--accent-gold); }
 
         table { 
             width: 100%; 
             max-width: 1100px; 
             border-collapse: collapse; 
             background: var(--card-bg); 
-            border-radius: 15px; 
+            border-radius: 12px; 
             overflow: hidden; 
-            box-shadow: 0 15px 40px rgba(0,0,0,0.6); 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
         }
         th { 
             background-color: var(--header-bg); 
-            color: #909090; 
-            padding: 22px 18px; 
-            font-size: 14px;
-            font-weight: 600;
+            color: var(--text-dim); 
+            padding: 18px; 
+            font-size: 13px;
+            text-transform: uppercase;
             border-bottom: 1px solid var(--border-color);
         }
-        td { padding: 18px; border-bottom: 1px solid var(--border-color); text-align: center; font-size: 15px; }
-        tr:hover { background-color: rgba(255,255,255,0.03); }
+        td { padding: 16px; border-bottom: 1px solid var(--border-color); text-align: center; font-size: 14px; }
+        tr:hover { background-color: rgba(255,255,255,0.02); }
         
+        /* 게이지 바 디자인 */
         .progress-container {
-            width: 130px;
+            width: 120px;
             background-color: var(--progress-bg);
-            border-radius: 15px;
+            border-radius: 10px;
             margin: 0 auto;
             position: relative;
-            height: 20px;
+            height: 18px;
             overflow: hidden;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
         }
         .progress-bar {
             height: 100%;
-            background: linear-gradient(90deg, #2ecc71, #27ae60);
+            background: linear-gradient(90deg, #3d8c34, var(--accent-green));
             width: 0%;
-            transition: width 0.7s ease-out;
-            border-radius: 15px;
+            transition: width 0.8s ease-in-out;
         }
         .progress-text {
             position: absolute;
             width: 100%;
             left: 0;
             top: 0;
-            font-size: 11px;
-            line-height: 20px;
-            color: #ffffff;
+            font-size: 10px;
+            line-height: 18px;
+            color: #fff;
             font-weight: bold;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
 
-        .dkp-highlight { color: #f1c40f !important; font-weight: 700; font-size: 16px; }
-        .loading { margin-top: 60px; color: #606060; font-size: 18px; }
-        .user-name-col { font-weight: 700; color: #e0e0e0; font-size: 15px; } 
-        .user-id-col { color: #606060; font-size: 12px; } 
+        .dkp-highlight { color: var(--accent-gold) !important; font-weight: 700; }
+        .loading { margin-top: 50px; color: var(--text-dim); font-size: 16px; }
+        .user-name-col { font-weight: 600; color: #fff; } 
+        .user-id-col { color: var(--text-dim); font-size: 11px; } 
     </style>
 </head>
 <body>
@@ -111,27 +131,27 @@
     <h2>🛡️ Alliance DKP Leaderboard</h2>
 
     <div class="search-container">
-        <input type="text" id="searchInput" onkeyup="filterData()" placeholder="Enter Username or UID">
+        <input type="text" id="searchInput" onkeyup="filterData()" placeholder="Enter Username or User ID...">
         
         <div class="btn-group-main">
-            <button onclick="sortBy('percent')" style="padding: 12px 24px; border-radius: 10px; border: 1px solid #2ecc71; background: var(--card-bg); color: #2ecc71; cursor: pointer; font-weight: bold;">📊 Achievement Rank</button>
-            <button onclick="sortBy('dkp')" style="padding: 12px 24px; border-radius: 10px; border: 1px solid #f1c40f; background: var(--card-bg); color: #f1c40f; cursor: pointer; font-weight: bold;">🚀 Total DKP Rank</button>
+            <button onclick="sortBy('dkp')" class="btn-active-dkp">🚀 Sort by Total DKP</button>
+            <button onclick="sortBy('percent')">📊 Sort by Progress</button>
         </div>
 
         <div class="btn-group-sub">
-            <button onclick="sortBy('t4')" style="padding: 5px 12px; border-radius: 6px; border: 1px solid #95a5a6; background: transparent; color: #95a5a6; cursor: pointer; font-size: 11px;">T4 Kills ↕</button>
-            <button onclick="sortBy('t5')" style="padding: 5px 12px; border-radius: 6px; border: 1px solid #95a5a6; background: transparent; color: #95a5a6; cursor: pointer; font-size: 11px;">T5 Kills ↕</button>
-            <button onclick="sortBy('dead')" style="padding: 5px 12px; border-radius: 6px; border: 1px solid #95a5a6; background: transparent; color: #95a5a6; cursor: pointer; font-size: 11px;">Dead ↕</button>
+            <button onclick="sortBy('t4')">T4 Kills ↕</button>
+            <button onclick="sortBy('t5')">T5 Kills ↕</button>
+            <button onclick="sortBy('dead')">Dead ↕</button>
         </div>
     </div>
     
     <table id="dkpTable">
         <thead>
             <tr>
-                <th style="width: 60px;">Rank</th>
+                <th style="width: 50px;">Rank</th>
                 <th>Username</th>
-                <th style="width: 110px;">ID</th>
-                <th style="width: 150px;">goal</th>
+                <th style="width: 100px;">ID</th>
+                <th style="width: 140px;">Progress</th>
                 <th>T4 Kills</th>
                 <th>T5 Kills</th>
                 <th>Total Dead</th>
@@ -142,24 +162,21 @@
     </table>
 
     <div id="loader" class="loading">
-        🔄 Loading Rank Data...
+        🔄 Loading data from Google Sheets...
     </div>
 
     <script>
-        // 사용자가 확인한 최종 CSV 주소
         const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRd8sijeP2d8lwtLT9vbkVZN3ZwZ31saToMee7VGPjnNn5D_hefOr0yEKsNCc5886ntTXrI8-3Jmb6F/pub?gid=0&single=true&output=csv';
         
         let allData = [];      
         let currentData = [];  
         let sortStatus = { percent: 1, dkp: 1, t4: 1, t5: 1, dead: 1 }; 
-
-        // 배율 설정
+        // 해당 부분 수정시 dkp 요구치 변경 가능
         const goalMultiplier = 0.5; 
         const weights = { t4: 4, t5: 5, dead: 10 };
 
         function parseNum(val) {
             if (!val) return 0;
-            // 숫자가 아니거나 콤마가 포함된 경우 처리
             return parseFloat(val.toString().replace(/,/g, '').trim()) || 0;
         }
 
@@ -174,38 +191,28 @@
                 skipEmptyLines: true,
                 complete: function(results) {
                     allData = results.data.map(row => {
-                        // 스크린샷 데이터 구조에 맞춘 매핑
                         const name = row['캐릭터 닉네임'] || 'Unknown';
                         const id = row['캐릭터ID'] || '';
-                        
-                        // 시트 헤더 명칭과 100% 일치해야 함
                         const t4 = parseNum(row['누적 T4']);
                         const t5 = parseNum(row['누적 T5']);
-                        const deadT4 = parseNum(row['누적 T4사망']);
-                        const deadT5 = parseNum(row['누적 T5사망']);
-                        const totalDead = deadT4 + deadT5;
-                        
-                        // 기준 전투력 (H열) 기반 목표 설정
+                        const dead = parseNum(row['누적 T4사망']) + parseNum(row['누적 T5사망']);
                         const basePower = parseNum(row['기준 전투력']);
-                        const dkp = (t4 * weights.t4) + (t5 * weights.t5) + (totalDead * weights.dead);
+                        
+                        const dkp = (t4 * weights.t4) + (t5 * weights.t5) + (dead * weights.dead);
                         const goal = basePower * goalMultiplier || 1; 
                         
                         return {
-                            name: name,
-                            id: id,
-                            dkp: dkp,
+                            name: name, id: id, dkp: dkp,
                             percent: (dkp / goal * 100),
-                            t4: t4, 
-                            t5: t5, 
-                            dead: totalDead, 
-                            goal: goal
+                            t4: t4, t5: t5, dead: dead, goal: goal
                         };
-                    }).filter(item => item.id !== ""); // ID가 없는 빈 행 제외
+                    }).filter(item => item.id !== "");
 
                     currentData = [...allData];
-                    // 최초 정렬: 달성률 높은 순
-                    sortStatus.percent = -1;
-                    sortBy('percent');
+                    
+                    // 핵심 수정: 첫 로딩 시 DKP 높은 순으로 정렬 (내림차순)
+                    sortStatus.dkp = -1; 
+                    sortBy('dkp');
                     
                     document.getElementById('loader').style.display = 'none';
                 }
@@ -213,6 +220,7 @@
         }
 
         function sortBy(column) {
+            // 버튼 강조 스타일 초기화 및 적용 (선택 사항)
             sortStatus[column] *= -1;
             const dir = sortStatus[column];
 
@@ -238,7 +246,7 @@
                     <td class="user-name-col">${item.name}</td>
                     <td class="user-id-col">${item.id}</td>
                     <td>
-                        <div class="progress-container" title="Target DKP: ${formatNumber(item.goal)}">
+                        <div class="progress-container" title="Target: ${formatNumber(item.goal)}">
                             <div class="progress-bar" style="width: ${displayPercent}%"></div>
                             <div class="progress-text">${item.percent.toFixed(1)}%</div>
                         </div>
