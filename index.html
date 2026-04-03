@@ -131,11 +131,11 @@
                 <th style="width: 60px;">순위</th>
                 <th>유저명</th>
                 <th style="width: 110px;">ID</th>
-                <th style="width: 150px;">목표 달성률</th>
-                <th>누적 T4</th>
-                <th>누적 T5</th>
-                <th>누적 데스</th>
-                <th>총 DKP</th>
+                <th style="width: 150px;">goal</th>
+                <th>T4 kill</th>
+                <th>T5 kill</th>
+                <th>death</th>
+                <th>total DKP</th>
             </tr>
         </thead>
         <tbody id="tableBody"></tbody>
@@ -146,20 +146,17 @@
     </div>
 
     <script>
-        // 현재 게시된 시트 URL (CSV 형식)
         const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRd8sijeP2d8lwtLT9vbkVZN3ZwZ31saToMee7VGPjnNn5D_hefOr0yEKsNCc5886ntTXrI8-3Jmb6F/pub?gid=0&single=true&output=csv';
         
         let allData = [];      
         let currentData = [];  
         let sortStatus = { percent: 1, dkp: 1, t4: 1, t5: 1, dead: 1 }; 
 
-        // 사용자 목표 설정 (기준 전투력의 50%)
         const goalMultiplier = 0.5; 
         const weights = { t4: 1, t5: 4, dead: 10 };
 
         function parseNum(val) {
             if (!val) return 0;
-            // 쉼표(,) 제거 후 숫자로 변환
             return parseFloat(val.toString().replace(/,/g, '')) || 0;
         }
 
@@ -173,31 +170,34 @@
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    console.log("Raw Data Check:", results.data[0]); // 디버깅용
-
                     allData = results.data.map(row => {
-    // 시트 사진에 적힌 정확한 열 이름들입니다.
-    const name = row['캐릭터 닉네임'] || '';
-    const id = row['캐릭터ID'] || '';
-    const pwr = parseNum(row['기준 전투력']); // H열
-    const t4 = parseNum(row['누적 T4']);     // D열
-    const t5 = parseNum(row['누적 T5']);     // E열
-    const d4 = parseNum(row['누적 T4사망']);  // F열
-    const d5 = parseNum(row['누적 T5사망']);  // G열
-    const dead = d4 + d5;
-    
-    // 계산 로직
-    const dkp = (t4 * weights.t4) + (t5 * weights.t5) + (dead * weights.dead);
-    const goal = pwr * goalMultiplier || 1; 
-    
-    return {
-        name: name,
-        id: id,
-        dkp: dkp,
-        percent: (dkp / goal * 100),
-        t4: t4, t5: t5, dead: dead, goal: goal
-    };
-}).filter(item => item.id !== ""); // ID가 없는 빈 줄은 무시
+                        const name = row['캐릭터 닉네임'] || '';
+                        const id = row['캐릭터ID'] || '';
+                        const pwr = parseNum(row['기준 전투력']);
+                        const t4 = parseNum(row['누적 T4']);
+                        const t5 = parseNum(row['누적 T5']);
+                        const d4 = parseNum(row['누적 T4사망']);
+                        const d5 = parseNum(row['누적 T5사망']);
+                        const dead = d4 + d5;
+                        
+                        const dkp = (t4 * weights.t4) + (t5 * weights.t5) + (dead * weights.dead);
+                        const goal = pwr * goalMultiplier || 1; 
+                        
+                        return {
+                            name: name,
+                            id: id,
+                            dkp: dkp,
+                            percent: (dkp / goal * 100),
+                            t4: t4, t5: t5, dead: dead, goal: goal
+                        };
+                    }).filter(item => item.id !== "");
+
+                    currentData = [...allData];
+                    sortStatus.percent = -1; // 내림차순 초기화
+                    sortBy('percent');
+                }
+            });
+        }
 
         function sortBy(column) {
             sortStatus[column] *= -1;
