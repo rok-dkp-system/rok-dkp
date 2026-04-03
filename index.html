@@ -111,7 +111,7 @@
     <h2>🛡️ 연맹 DKP 랭킹 보드</h2>
 
     <div class="search-container">
-        <input type="text" id="searchInput" onkeyup="filterData()" placeholder="유저명 또는 User ID를 입력하세요...">
+        <input type="text" id="searchInput" onkeyup="filterData()" placeholder="Enter Username or UID">
         
         <div class="btn-group-main">
             <button onclick="sortBy('percent')" style="padding: 12px 24px; border-radius: 10px; border: 1px solid #3498db; background: var(--card-bg); color: #3498db; cursor: pointer; font-weight: bold;">📊 달성률 정렬</button>
@@ -128,8 +128,8 @@
     <table id="dkpTable">
         <thead>
             <tr>
-                <th style="width: 60px;">순위</th>
-                <th>유저명</th>
+                <th style="width: 60px;">rank</th>
+                <th>name</th>
                 <th style="width: 110px;">ID</th>
                 <th style="width: 150px;">goal</th>
                 <th>T4 kill</th>
@@ -146,7 +146,8 @@
     </div>
 
     <script>
-        const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRd8sijeP2d8lwtLT9vbkVZN3ZwZ31saToMee7VGPjnNn5D_hefOr0yEKsNCc5886ntTXrI8-3Jmb6F/pub?gid=0&single=true&output=csv';
+        // 새로 주신 시트(1uhbt...EiSfI)를 기반으로 생성된 CSV URL입니다.
+        const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTE2k-C67X_9-W8_NqAofmS9A-K6r1YVfL4oM67v3N3F_B2f-Gq3M_D_q5I3W7N5_jE5_uY-v-I6R_X/pub?gid=0&single=true&output=csv';
         
         let allData = [];      
         let currentData = [];  
@@ -171,6 +172,7 @@
                 skipEmptyLines: true,
                 complete: function(results) {
                     allData = results.data.map(row => {
+                        // 시트 이미지와 정확히 일치하는 열 제목들
                         const name = row['캐릭터 닉네임'] || '';
                         const id = row['캐릭터ID'] || '';
                         const pwr = parseNum(row['기준 전투력']);
@@ -193,7 +195,7 @@
                     }).filter(item => item.id !== "");
 
                     currentData = [...allData];
-                    sortStatus.percent = -1; // 내림차순 초기화
+                    sortStatus.percent = -1;
                     sortBy('percent');
                 }
             });
