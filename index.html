@@ -176,36 +176,28 @@
                     console.log("Raw Data Check:", results.data[0]); // 디버깅용
 
                     allData = results.data.map(row => {
-                        // 시트의 실제 열 이름과 매칭 (사진 기반)
-                        const name = row['캐릭터 닉네임'] || '';
-                        const id = row['캐릭터ID'] || '';
-                        const pwr = parseNum(row['기준 전투력']);
-                        const t4 = parseNum(row['누적 T4']);
-                        const t5 = parseNum(row['누적 T5']);
-                        const d4 = parseNum(row['누적 T4사망']);
-                        const d5 = parseNum(row['누적 T5사망']);
-                        const dead = d4 + d5;
-                        
-                        const dkp = (t4 * weights.t4) + (t5 * weights.t5) + (dead * weights.dead);
-                        const goal = pwr * goalMultiplier || 1; 
-                        
-                        return {
-                            name: name,
-                            id: id,
-                            dkp: dkp,
-                            percent: (dkp / goal * 100),
-                            t4: t4, t5: t5, dead: dead, goal: goal
-                        };
-                    }).filter(item => item.id !== "");
-
-                    currentData = [...allData];
-                    
-                    // 초기 정렬: 달성률 높은 순
-                    sortStatus.percent = -1;
-                    sortBy('percent');
-                }
-            });
-        }
+    // 시트 사진에 적힌 정확한 열 이름들입니다.
+    const name = row['캐릭터 닉네임'] || '';
+    const id = row['캐릭터ID'] || '';
+    const pwr = parseNum(row['기준 전투력']); // H열
+    const t4 = parseNum(row['누적 T4']);     // D열
+    const t5 = parseNum(row['누적 T5']);     // E열
+    const d4 = parseNum(row['누적 T4사망']);  // F열
+    const d5 = parseNum(row['누적 T5사망']);  // G열
+    const dead = d4 + d5;
+    
+    // 계산 로직
+    const dkp = (t4 * weights.t4) + (t5 * weights.t5) + (dead * weights.dead);
+    const goal = pwr * goalMultiplier || 1; 
+    
+    return {
+        name: name,
+        id: id,
+        dkp: dkp,
+        percent: (dkp / goal * 100),
+        t4: t4, t5: t5, dead: dead, goal: goal
+    };
+}).filter(item => item.id !== ""); // ID가 없는 빈 줄은 무시
 
         function sortBy(column) {
             sortStatus[column] *= -1;
