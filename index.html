@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ROK DKP 랭킹 시스템</title>
+    <title>ROK Alliance DKP Board</title>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
     <style>
         :root { 
@@ -83,7 +83,7 @@
         }
         .progress-bar {
             height: 100%;
-            background: linear-gradient(90deg, #2980b9, #3498db);
+            background: linear-gradient(90deg, #2ecc71, #27ae60);
             width: 0%;
             transition: width 0.7s ease-out;
             border-radius: 15px;
@@ -100,7 +100,7 @@
             text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
         }
 
-        .dkp-highlight { color: #e67e22 !important; font-weight: 700; font-size: 16px; }
+        .dkp-highlight { color: #f1c40f !important; font-weight: 700; font-size: 16px; }
         .loading { margin-top: 60px; color: #606060; font-size: 18px; }
         .user-name-col { font-weight: 700; color: #e0e0e0; font-size: 15px; } 
         .user-id-col { color: #606060; font-size: 12px; } 
@@ -108,57 +108,59 @@
 </head>
 <body>
 
-    <h2>🛡️ 연맹 DKP 랭킹 보드</h2>
+    <h2>🛡️ Alliance DKP Leaderboard</h2>
 
     <div class="search-container">
         <input type="text" id="searchInput" onkeyup="filterData()" placeholder="Enter Username or UID">
         
         <div class="btn-group-main">
-            <button onclick="sortBy('percent')" style="padding: 12px 24px; border-radius: 10px; border: 1px solid #3498db; background: var(--card-bg); color: #3498db; cursor: pointer; font-weight: bold;">📊 달성률 정렬</button>
-            <button onclick="sortBy('dkp')" style="padding: 12px 24px; border-radius: 10px; border: 1px solid #e67e22; background: var(--card-bg); color: #e67e22; cursor: pointer; font-weight: bold;">🚀 총 DKP 정렬</button>
+            <button onclick="sortBy('percent')" style="padding: 12px 24px; border-radius: 10px; border: 1px solid #2ecc71; background: var(--card-bg); color: #2ecc71; cursor: pointer; font-weight: bold;">📊 Achievement Rank</button>
+            <button onclick="sortBy('dkp')" style="padding: 12px 24px; border-radius: 10px; border: 1px solid #f1c40f; background: var(--card-bg); color: #f1c40f; cursor: pointer; font-weight: bold;">🚀 Total DKP Rank</button>
         </div>
 
         <div class="btn-group-sub">
-            <button onclick="sortBy('t4')" style="padding: 5px 12px; border-radius: 6px; border: 1px solid #95a5a6; background: transparent; color: #95a5a6; cursor: pointer; font-size: 11px;">T4 정렬 ↕</button>
-            <button onclick="sortBy('t5')" style="padding: 5px 12px; border-radius: 6px; border: 1px solid #95a5a6; background: transparent; color: #95a5a6; cursor: pointer; font-size: 11px;">T5 정렬 ↕</button>
-            <button onclick="sortBy('dead')" style="padding: 5px 12px; border-radius: 6px; border: 1px solid #95a5a6; background: transparent; color: #95a5a6; cursor: pointer; font-size: 11px;">데스 정렬 ↕</button>
+            <button onclick="sortBy('t4')" style="padding: 5px 12px; border-radius: 6px; border: 1px solid #95a5a6; background: transparent; color: #95a5a6; cursor: pointer; font-size: 11px;">T4 Kills ↕</button>
+            <button onclick="sortBy('t5')" style="padding: 5px 12px; border-radius: 6px; border: 1px solid #95a5a6; background: transparent; color: #95a5a6; cursor: pointer; font-size: 11px;">T5 Kills ↕</button>
+            <button onclick="sortBy('dead')" style="padding: 5px 12px; border-radius: 6px; border: 1px solid #95a5a6; background: transparent; color: #95a5a6; cursor: pointer; font-size: 11px;">Dead ↕</button>
         </div>
     </div>
     
     <table id="dkpTable">
         <thead>
             <tr>
-                <th style="width: 60px;">rank</th>
-                <th>name</th>
+                <th style="width: 60px;">Rank</th>
+                <th>Username</th>
                 <th style="width: 110px;">ID</th>
                 <th style="width: 150px;">goal</th>
-                <th>T4 kill</th>
-                <th>T5 kill</th>
-                <th>death</th>
-                <th>total DKP</th>
+                <th>T4 Kills</th>
+                <th>T5 Kills</th>
+                <th>Total Dead</th>
+                <th>Total DKP</th>
             </tr>
         </thead>
         <tbody id="tableBody"></tbody>
     </table>
 
     <div id="loader" class="loading">
-        🔄 데이터를 불러오는 중입니다...
+        🔄 Loading Rank Data...
     </div>
 
     <script>
-        // 새로 주신 시트(1uhbt...EiSfI)를 기반으로 생성된 CSV URL입니다.
-        const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTE2k-C67X_9-W8_NqAofmS9A-K6r1YVfL4oM67v3N3F_B2f-Gq3M_D_q5I3W7N5_jE5_uY-v-I6R_X/pub?gid=0&single=true&output=csv';
+        // 사용자가 확인한 최종 CSV 주소
+        const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRd8sijeP2d8lwtLT9vbkVZN3ZwZ31saToMee7VGPjnNn5D_hefOr0yEKsNCc5886ntTXrI8-3Jmb6F/pub?gid=0&single=true&output=csv';
         
         let allData = [];      
         let currentData = [];  
         let sortStatus = { percent: 1, dkp: 1, t4: 1, t5: 1, dead: 1 }; 
 
+        // 배율 설정
         const goalMultiplier = 0.5; 
-        const weights = { t4: 1, t5: 4, dead: 10 };
+        const weights = { t4: 4, t5: 5, dead: 10 };
 
         function parseNum(val) {
             if (!val) return 0;
-            return parseFloat(val.toString().replace(/,/g, '')) || 0;
+            // 숫자가 아니거나 콤마가 포함된 경우 처리
+            return parseFloat(val.toString().replace(/,/g, '').trim()) || 0;
         }
 
         function formatNumber(num) {
@@ -172,31 +174,40 @@
                 skipEmptyLines: true,
                 complete: function(results) {
                     allData = results.data.map(row => {
-                        // 시트 이미지와 정확히 일치하는 열 제목들
-                        const name = row['캐릭터 닉네임'] || '';
+                        // 스크린샷 데이터 구조에 맞춘 매핑
+                        const name = row['캐릭터 닉네임'] || 'Unknown';
                         const id = row['캐릭터ID'] || '';
-                        const pwr = parseNum(row['기준 전투력']);
+                        
+                        // 시트 헤더 명칭과 100% 일치해야 함
                         const t4 = parseNum(row['누적 T4']);
                         const t5 = parseNum(row['누적 T5']);
-                        const d4 = parseNum(row['누적 T4사망']);
-                        const d5 = parseNum(row['누적 T5사망']);
-                        const dead = d4 + d5;
+                        const deadT4 = parseNum(row['누적 T4사망']);
+                        const deadT5 = parseNum(row['누적 T5사망']);
+                        const totalDead = deadT4 + deadT5;
                         
-                        const dkp = (t4 * weights.t4) + (t5 * weights.t5) + (dead * weights.dead);
-                        const goal = pwr * goalMultiplier || 1; 
+                        // 기준 전투력 (H열) 기반 목표 설정
+                        const basePower = parseNum(row['기준 전투력']);
+                        const dkp = (t4 * weights.t4) + (t5 * weights.t5) + (totalDead * weights.dead);
+                        const goal = basePower * goalMultiplier || 1; 
                         
                         return {
                             name: name,
                             id: id,
                             dkp: dkp,
                             percent: (dkp / goal * 100),
-                            t4: t4, t5: t5, dead: dead, goal: goal
+                            t4: t4, 
+                            t5: t5, 
+                            dead: totalDead, 
+                            goal: goal
                         };
-                    }).filter(item => item.id !== "");
+                    }).filter(item => item.id !== ""); // ID가 없는 빈 행 제외
 
                     currentData = [...allData];
+                    // 최초 정렬: 달성률 높은 순
                     sortStatus.percent = -1;
                     sortBy('percent');
+                    
+                    document.getElementById('loader').style.display = 'none';
                 }
             });
         }
@@ -227,7 +238,7 @@
                     <td class="user-name-col">${item.name}</td>
                     <td class="user-id-col">${item.id}</td>
                     <td>
-                        <div class="progress-container" title="목표 DKP: ${formatNumber(item.goal)}">
+                        <div class="progress-container" title="Target DKP: ${formatNumber(item.goal)}">
                             <div class="progress-bar" style="width: ${displayPercent}%"></div>
                             <div class="progress-text">${item.percent.toFixed(1)}%</div>
                         </div>
@@ -239,8 +250,6 @@
                 `;
                 tbody.appendChild(tr);
             });
-
-            document.getElementById('loader').style.display = 'none';
         }
 
         function filterData() {
